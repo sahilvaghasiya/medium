@@ -5,7 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { PostsModule } from './posts/posts.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
-// import { TwilioService } from './twilio/twilio.service';
 import { EmailService } from './email/emailVerification.service';
 import { EmailModule } from './email/emailVerification.module';
 

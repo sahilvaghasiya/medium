@@ -11,7 +11,7 @@ import {
 } from 'src/dto/auth-dto';
 import { PostsService } from 'src/posts/posts.service';
 import { generateOTP, generateOTPCode } from 'src/utils/codeGenerator';
-import { getExpiry } from 'src/utils/dateTimeUtility';
+// import { getExpiry } from 'src/utils/dateTimeUtility';
 import { UserService } from '../user/user.service';
 import { jwtSecret } from './constant';
 
@@ -89,7 +89,7 @@ export class AuthService {
     }
     let otp;
     let otpCode;
-    const expiresAt = getExpiry();
+    // const expiresAt = getExpiry();
     if (user.isEmailVerified == false) {
       otp = generateOTP(6);
       otpCode = generateOTPCode(10);
@@ -99,70 +99,79 @@ export class AuthService {
         },
         data: {
           otp: {
-            update: {
-              code: otp,
-              oToken: otpCode,
-              expiresAt: expiresAt,
-            },
+            code: otp,
+            oToken: otpCode,
+            // expiresAt: expiresAt.toISOString(),
           },
         },
       });
       return {
         message: `now, verify your account with otp: ${otp}`,
         oToken: otpCode,
+        // expiresAt: expiresAt.toISOString(),
       };
     }
-    // return {
-    // token,
-    // };
+    const token = await this.signToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+    });
+    return {
+      message: `your account is already verified, so you can directly use this token: ${token}`,
+    };
   }
 
-  async signToken(args: { id: string; email: string; name: string }) {
+  async signToken(args: {
+    id: string;
+    email: string;
+    name: string;
+    phone: string;
+  }) {
     const payload = args;
     return this.jwt.signAsync(payload, { secret: jwtSecret });
   }
 
-  // async verifyToken(oToken) {
-  //   const userCredential = await this.prisma.userCredential.findUnique({
-  //     where: {
-  //       otp: {
-  //         include: {
-  //           oToken: oToken,
-  //         },
-  //       },
-  //     },
-  //   });
-  //   if (!userCredential) {
-  //     throw new HttpErrorByCode[400]('Invalid token');
-  //   }
-  //   return userCredential;
-  // }
-
   async verifyLogIn(req: any, loginOTPDto: LoginOTPDto) {
     const { oToken, code } = loginOTPDto;
-    const otp = await this.prisma.otp.findFirst({
+    console.log(loginOTPDto);
+    // const expiresAt = getExpiry();
+    const userCredential = await this.prisma.userCredential.findFirst({
       where: {
-        oToken: oToken,
-        code,
-      },
-      include: {
-        UserCredential: {
-          include: {
-            user: true,
+        otp: {
+          equals: {
+            code,
+            oToken,
+            // expiresAt: expiresAt.toISOString(),
           },
         },
       },
     });
-    if (otp) {
-      const us = await this.prisma.userCredential.findFirst({
-        where: {
-          otpId: otp.id,
+    console.log(userCredential);
+    if (userCredential) {
+      await this.userService.updateEmailVerificationStatus(
+        userCredential.userId,
+        true,
+      );
+      const final = await this.userService.getUserById(userCredential.userId);
+      const token = await this.signToken({
+        id: final.id,
+        email: final.email,
+        name: final.name,
+        phone: final.phone,
+      });
+      await this.prisma.session.create({
+        data: {
+          userId: final.id,
+          token: token,
         },
       });
-      const final = await this.userService.getUserById(us.userId);
-      return final;
+      return {
+        final,
+        token,
+      };
     } else {
-      throw new HttpErrorByCode[400](' Invalid OTP ');
+      throw new Error('wrong');
     }
   }
 

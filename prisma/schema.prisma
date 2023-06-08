@@ -63,21 +63,20 @@ model UserCredential {
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique @db.ObjectId
   password  String
-  otp       Otp?     @relation(fields: [otpId], references: [id])
+  otp       Json?
   createdAt DateTime @default(now()) @db.Date
   updatedAt DateTime @updatedAt @db.Date
-  otpId     String?  @db.ObjectId
 }
 
-model Otp {
-  id             String           @id @default(auto()) @map("_id") @db.ObjectId
-  code           String           @default("null")
-  oToken         String           @default("null")
-  createdAt      DateTime?        @default(now())
-  updatedAt      DateTime         @updatedAt
-  expiresAt      DateTime?        @db.Date()
-  UserCredential UserCredential[]
-}
+// model Otp {
+//   id             String           @id @default(auto()) @map("_id") @db.ObjectId
+//   code           String           @default("null")
+//   oToken         String           @default("null")
+//   createdAt      DateTime?        @default(now())
+//   updatedAt      DateTime         @updatedAt
+//   expiresAt      DateTime?        @db.Date()
+//   UserCredential UserCredential[]
+// }
 
 enum Role {
   USER
