@@ -112,10 +112,8 @@ export class AuthService {
         subject: 'LogIn verification',
         templateId: 'd-c1b35a54f778492bbc0bd6c963594349',
         dynamicTemplateData: {
-          text: `
-          Hi, ${user.name},
-          your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
-          html: `<p> your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}</p>`,
+          text: `Hi ${user.name}\n,\nYour logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
+          html: `Hi ${user.name},<br><br>Your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
         },
       };
 
