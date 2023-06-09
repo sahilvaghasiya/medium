@@ -5,12 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { PostsModule } from './posts/posts.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
-import { EmailService } from './email/emailVerification.service';
-import { EmailModule } from './email/emailVerification.module';
-
 @Module({
-  imports: [UserModule, AuthModule, PostsModule, AdminModule, EmailModule],
+  imports: [UserModule, AuthModule, PostsModule, AdminModule],
   controllers: [AppController],
-  providers: [AppService, EmailService],
+  providers: [AppService],
 })
 export class AppModule {}

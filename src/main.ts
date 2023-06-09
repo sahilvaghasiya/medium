@@ -3,7 +3,11 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as session from 'express-session';
 import { AppModule } from './app.module';
+import * as sgMail from '@sendgrid/mail';
 
+sgMail.setApiKey(
+  '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',
+);
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 

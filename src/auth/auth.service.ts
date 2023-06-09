@@ -12,6 +12,7 @@ import {
 import { PostsService } from 'src/posts/posts.service';
 import { generateOTP, generateOTPCode } from 'src/utils/codeGenerator';
 // import { getExpiry } from 'src/utils/dateTimeUtility';
+import * as sgMail from '@sendgrid/mail';
 import { UserService } from '../user/user.service';
 import { jwtSecret } from './constant';
 
@@ -90,7 +91,7 @@ export class AuthService {
     let otp;
     let otpCode;
     // const expiresAt = getExpiry();
-    if (user.isEmailVerified == false) {
+    if (user.isEmailVerified == false || user.isEmailVerified == true) {
       otp = generateOTP(6);
       otpCode = generateOTPCode(10);
       await this.prisma.userCredential.update({
@@ -105,9 +106,23 @@ export class AuthService {
           },
         },
       });
+      const message = {
+        to: 'sp95108s.p@gmail.com',
+        from: 'sahilvaghasiya000@gmail.com',
+        subject: 'LogIn verification',
+        templateId: 'd-c1b35a54f778492bbc0bd6c963594349',
+        dynamicTemplateData: {
+          text: `
+          Hi, ${user.name},
+          your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
+          html: `<p> your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}</p>`,
+        },
+      };
+
+      await sgMail.send(message);
       return {
-        message: `now, verify your account with otp: ${otp}`,
-        oToken: otpCode,
+        message:
+          'now, verify your account with otp which is sent to your email',
         // expiresAt: expiresAt.toISOString(),
       };
     }
@@ -171,7 +186,7 @@ export class AuthService {
         token,
       };
     } else {
-      throw new Error('wrong');
+      throw new Error('invalid credentials');
     }
   }
 
