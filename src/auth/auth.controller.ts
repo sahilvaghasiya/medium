@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   AuthDto,
   ChangePasswordDto,
+  InvitationDto,
   LoginOTPDto,
   SignUpDto,
 } from 'src/dto/auth-dto';
@@ -37,6 +38,13 @@ export class AuthController {
   @Post('/account/verify')
   async verifyLogIn(@Req() req: any, @Body() loginOTPDto: LoginOTPDto) {
     return await this.authService.verifyLogIn(req, loginOTPDto);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @Post('/InviteUser')
+  async inviteUser(@Req() req: any, @Body() invitationDto: InvitationDto) {
+    return await this.authService.sendInvitation(req, invitationDto);
   }
 
   @UseGuards(AuthGuard('jwt'))

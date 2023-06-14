@@ -1,7 +1,9 @@
 // import { PartialType } from '@nestjs/mapped-types';
 import { ApiProperty } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import {
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -41,9 +43,10 @@ export class SignUpDto {
   name?: string;
 
   @ApiProperty()
-  @IsString({ each: true, message: 'Role must be a string' })
-  @IsNotEmpty({ message: 'At least one role must be provided' })
-  role: string;
+  @IsString({ message: 'Role is required' })
+  @IsNotEmpty({ message: 'Role is required' })
+  @IsIn(['ADMIN', 'USER'], { each: true, message: 'Invalid Role' })
+  role: Role;
 }
 
 export class AuthDto {
@@ -94,8 +97,15 @@ export class LoginOTPDto {
   oToken: string;
 }
 
-export class Enable2FADto {
-  @IsEmail(undefined, { message: 'please enter email address' })
-  @IsNotEmpty({ message: 'email is required' })
+export class InvitationDto {
+  @ApiProperty()
+  @IsNotEmpty({ message: 'please enter email' })
+  @IsEmail(undefined, { message: 'enter valid emailId' })
   email: string;
+
+  @ApiProperty()
+  @IsString({ message: 'Role is required' })
+  @IsNotEmpty({ message: 'Role is required' })
+  @IsIn(['ADMIN', 'USER'], { each: true, message: 'Invalid Role' })
+  role: Role;
 }

@@ -6,13 +6,13 @@ import * as bcrypt from 'bcrypt';
 import {
   AuthDto,
   ChangePasswordDto,
+  InvitationDto,
   LoginOTPDto,
   SignUpDto,
 } from 'src/dto/auth-dto';
+import { EmailService } from 'src/email/email.service';
 import { PostsService } from 'src/posts/posts.service';
 import { generateOTP, generateOTPCode } from 'src/utils/codeGenerator';
-// import { getExpiry } from 'src/utils/dateTimeUtility';
-import * as sgMail from '@sendgrid/mail';
 import { UserService } from '../user/user.service';
 import { jwtSecret } from './constant';
 
@@ -23,6 +23,7 @@ export class AuthService {
     private jwt: JwtService,
     private userService: UserService,
     private postsService: PostsService,
+    private emailService: EmailService,
   ) {}
 
   private hashData(data: string) {
@@ -30,7 +31,7 @@ export class AuthService {
   }
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, phone, name } = signUpDto;
+    const { email, password, phone, name, role } = signUpDto;
     const passwordHash = await this.hashData(password);
     const existingUser = await this.prisma.user.findUnique({
       where: {
@@ -52,7 +53,7 @@ export class AuthService {
         password: passwordHash,
         name,
         phone,
-        role: Role.USER,
+        role,
       },
     });
     await this.prisma.userCredential.create({
@@ -90,7 +91,6 @@ export class AuthService {
     }
     let otp;
     let otpCode;
-    // const expiresAt = getExpiry();
     if (user.isEmailVerified == false || user.isEmailVerified == true) {
       otp = generateOTP(6);
       otpCode = generateOTPCode(10);
@@ -102,26 +102,18 @@ export class AuthService {
           otp: {
             code: otp,
             oToken: otpCode,
-            // expiresAt: expiresAt.toISOString(),
           },
         },
       });
-      const message = {
-        to: 'sp95108s.p@gmail.com',
-        from: 'sahilvaghasiya000@gmail.com',
-        subject: 'LogIn verification',
-        templateId: 'd-c1b35a54f778492bbc0bd6c963594349',
-        dynamicTemplateData: {
-          text: `Hi ${user.name}\n,\nYour logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
-          html: `Hi ${user.name},<br><br>Your logIn verification code is: ${otp} and your token for logIn is: ${otpCode}`,
-        },
-      };
-
-      await sgMail.send(message);
+      await this.emailService.sendVerificationEmail(
+        'sp95108s.p@gmail.com',
+        user.name,
+        otp,
+      );
       return {
         message:
           'now, verify your account with otp which is sent to your email',
-        // expiresAt: expiresAt.toISOString(),
+        oToken: otpCode,
       };
     }
     const token = await this.signToken({
@@ -148,14 +140,12 @@ export class AuthService {
   async verifyLogIn(req: any, loginOTPDto: LoginOTPDto) {
     const { oToken, code } = loginOTPDto;
     console.log(loginOTPDto);
-    // const expiresAt = getExpiry();
     const userCredential = await this.prisma.userCredential.findFirst({
       where: {
         otp: {
           equals: {
-            code,
-            oToken,
-            // expiresAt: expiresAt.toISOString(),
+            code: code,
+            oToken: oToken,
           },
         },
       },
@@ -239,5 +229,25 @@ export class AuthService {
       throw new HttpErrorByCode[400]('sorry');
     }
     return user;
+  }
+
+  async sendInvitation(req: any, invitationDto: InvitationDto) {
+    const { email, role } = invitationDto;
+    const user = await this.userService.getUserById(req.user.id);
+    if (user.role != Role.ADMIN) {
+      throw new Error('only Admin can send Invitations');
+    }
+    const invitedUser = await this.prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+    if (invitedUser) {
+      throw new Error('user already available in community');
+    }
+    await this.emailService.sendInvitation(email, invitationDto);
+    return {
+      message: `invitation sent to this email: ${invitedUser.email}`,
+    };
   }
 }

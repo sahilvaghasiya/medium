@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { jwtSecret } from './constant';
 import { JwtStrategy } from './jwt.strategy';
+import { EmailService } from 'src/email/email.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { JwtStrategy } from './jwt.strategy';
     PostsService,
     PrismaClient,
     JwtStrategy,
+    EmailService,
   ],
 })
 export class AuthModule {}
