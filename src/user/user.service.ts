@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, Role, User } from '@prisma/client';
 import { UpdateUserDto } from 'src/dto/user-dto';
 
 @Injectable()
@@ -77,6 +77,16 @@ export class UserService {
         isEmailVerified,
       },
     });
+  }
+
+  async getUserByRole(email: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        role: Role.ADMIN,
+      },
+    });
+    return user;
   }
 }
 

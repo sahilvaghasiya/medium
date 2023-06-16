@@ -44,7 +44,7 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('/InviteUser')
   async inviteUser(@Req() req: any, @Body() invitationDto: InvitationDto) {
-    return await this.authService.sendInvitation(req, invitationDto);
+    return await this.authService.inviteUser(req, invitationDto);
   }
 
   @UseGuards(AuthGuard('jwt'))

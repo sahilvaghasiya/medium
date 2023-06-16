@@ -12,6 +12,8 @@ datasource db {
 
 model User {
   id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  invitationCode  String?
+  invitedBy       String?
   email           String          @unique
   password        String
   phone           String          @unique
@@ -21,7 +23,6 @@ model User {
   isEmailVerified Boolean         @default(false)
   createdAt       DateTime        @default(now()) @db.Date
   updatedAt       DateTime        @updatedAt @db.Date
-  lastLoggedInAt  DateTime?       @db.Date
   userCredential  UserCredential?
 }
 
@@ -65,16 +66,6 @@ model UserCredential {
   createdAt DateTime @default(now()) @db.Date
   updatedAt DateTime @updatedAt @db.Date
 }
-
-// model Otp {
-//   id             String           @id @default(auto()) @map("_id") @db.ObjectId
-//   code           String           @default("null")
-//   oToken         String           @default("null")
-//   createdAt      DateTime?        @default(now())
-//   updatedAt      DateTime         @updatedAt
-//   expiresAt      DateTime?        @db.Date()
-//   UserCredential UserCredential[]
-// }
 
 enum Role {
   USER

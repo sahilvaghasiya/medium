@@ -11,7 +11,6 @@ import {
   SignUpDto,
 } from 'src/dto/auth-dto';
 import { EmailService } from 'src/email/email.service';
-import { PostsService } from 'src/posts/posts.service';
 import { generateOTP, generateOTPCode } from 'src/utils/codeGenerator';
 import { UserService } from '../user/user.service';
 import { jwtSecret } from './constant';
@@ -22,7 +21,6 @@ export class AuthService {
     private prisma: PrismaClient,
     private jwt: JwtService,
     private userService: UserService,
-    private postsService: PostsService,
     private emailService: EmailService,
   ) {}
 
@@ -231,8 +229,8 @@ export class AuthService {
     return user;
   }
 
-  async sendInvitation(req: any, invitationDto: InvitationDto) {
-    const { email, role } = invitationDto;
+  async inviteUser(req: any, invitationDto: InvitationDto) {
+    const { email } = invitationDto;
     const user = await this.userService.getUserById(req.user.id);
     if (user.role != Role.ADMIN) {
       throw new Error('only Admin can send Invitations');
@@ -245,9 +243,12 @@ export class AuthService {
     if (invitedUser) {
       throw new Error('user already available in community');
     }
-    await this.emailService.sendInvitation(email, invitationDto);
+    await this.emailService.sendInvitation(
+      invitationDto.email,
+      invitationDto.role,
+    );
     return {
-      message: `invitation sent to this email: ${invitedUser.email}`,
+      message: `invitation sent to this email: ${email}`,
     };
   }
 }
