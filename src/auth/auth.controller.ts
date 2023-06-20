@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   AuthDto,
   ChangePasswordDto,
+  ConfirmSignUpDto,
   InvitationDto,
   LoginOTPDto,
   SignUpDto,
@@ -45,6 +46,12 @@ export class AuthController {
   @Post('/InviteUser')
   async inviteUser(@Req() req: any, @Body() invitationDto: InvitationDto) {
     return await this.authService.inviteUser(req, invitationDto);
+  }
+
+  @ApiBearerAuth()
+  @Post('/confirm-signUp')
+  async confirmSignUp(@Body() confirmSignUpDto: ConfirmSignUpDto) {
+    return await this.authService.confirmSignUp(confirmSignUpDto);
   }
 
   @UseGuards(AuthGuard('jwt'))

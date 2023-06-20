@@ -17,3 +17,13 @@ export const generateOTPCode = (n: number): string => {
   }
   return otpCode;
 };
+
+export const invitationCode = (n: number): string => {
+  const digits = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let otpCode = '';
+
+  for (let i = 0; i < n; i++) {
+    otpCode += digits[Math.floor(Math.random() * digits.length)];
+  }
+  return otpCode;
+};

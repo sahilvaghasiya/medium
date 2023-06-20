@@ -1,22 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, StatusOfAccount } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
   AuthDto,
   ChangePasswordDto,
+  ConfirmSignUpDto,
   InvitationDto,
   LoginOTPDto,
   SignUpDto,
 } from 'src/dto/auth-dto';
 import { EmailService } from 'src/email/email.service';
-import { generateOTP, generateOTPCode } from 'src/utils/codeGenerator';
+import {
+  generateOTP,
+  generateOTPCode,
+  invitationCode,
+} from 'src/utils/codeGenerator';
 import { UserService } from '../user/user.service';
 import { jwtSecret } from './constant';
 
 @Injectable()
 export class AuthService {
+  userCredential: any;
   constructor(
     private prisma: PrismaClient,
     private jwt: JwtService,
@@ -29,7 +35,8 @@ export class AuthService {
   }
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password, phone, name, role } = signUpDto;
+    const { email, password, phone, name, role, invitationCode, invitedBy } =
+      signUpDto;
     const passwordHash = await this.hashData(password);
     const existingUser = await this.prisma.user.findUnique({
       where: {
@@ -48,10 +55,12 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email,
-        password: passwordHash,
+        invitationCode,
+        invitedBy,
         name,
         phone,
         role,
+        statusOfAccount: StatusOfAccount.ACTIVATED,
       },
     });
     await this.prisma.userCredential.create({
@@ -61,7 +70,7 @@ export class AuthService {
             id: user.id,
           },
         },
-        password: user.password,
+        password: passwordHash,
         otp: {
           create: {
             code: undefined,
@@ -80,16 +89,21 @@ export class AuthService {
     if (!user) {
       throw new HttpErrorByCode[400]('Invalid email');
     }
+    const userCredential = await this.prisma.userCredential.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
     const passwordMatches: boolean = await bcrypt.compare(
       authDto.password,
-      user.password,
+      userCredential.password,
     );
     if (!passwordMatches) {
       throw new HttpErrorByCode[400]('Invalid Password');
     }
     let otp;
     let otpCode;
-    if (user.isEmailVerified == false || user.isEmailVerified == true) {
+    if (user.isEmailVerified === false || user.isEmailVerified === true) {
       otp = generateOTP(6);
       otpCode = generateOTPCode(10);
       await this.prisma.userCredential.update({
@@ -104,7 +118,7 @@ export class AuthService {
         },
       });
       await this.emailService.sendVerificationEmail(
-        'sp95108s.p@gmail.com',
+        'sahil_172@ldrp.ac.in',
         user.name,
         otp,
       );
@@ -202,12 +216,20 @@ export class AuthService {
     if (!checkUser) {
       throw new HttpErrorByCode[404]('userId not found');
     }
-    const matchPassword = await bcrypt.compare(password, checkUser.password);
+    const userCredential = await this.prisma.userCredential.findUnique({
+      where: {
+        userId: checkUser.id,
+      },
+    });
+    const matchPassword = await bcrypt.compare(
+      password,
+      userCredential.password,
+    );
     if (!matchPassword) {
       throw new HttpErrorByCode[400]('invalid password');
     }
-    await this.prisma.user.update({
-      where: { id: req.user.id },
+    await this.prisma.userCredential.update({
+      where: { userId: req.user.id },
       data: { password: bcrypt.hashSync(newPassword, 8) },
     });
     return {
@@ -243,12 +265,67 @@ export class AuthService {
     if (invitedUser) {
       throw new Error('user already available in community');
     }
+    const randomNumber = invitationCode(16);
     await this.emailService.sendInvitation(
       invitationDto.email,
       invitationDto.role,
+      randomNumber,
+      user.name,
+      user.phone,
     );
+    await this.prisma.user.create({
+      data: {
+        email: invitationDto.email,
+        invitationCode: randomNumber,
+        invitedBy: user.id,
+        role: invitationDto.role,
+        phone: '',
+        statusOfAccount: StatusOfAccount.INVITED,
+      },
+    });
     return {
       message: `invitation sent to this email: ${email}`,
+    };
+  }
+
+  async confirmSignUp(confirmSignUpDto: ConfirmSignUpDto) {
+    const { invitationCode, password, phone, statusOfAccount, name } =
+      confirmSignUpDto;
+    const passwordHash = await this.hashData(password);
+    const user = await this.prisma.user.findFirst({
+      where: {
+        invitationCode: invitationCode,
+      },
+    });
+    await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        phone: phone,
+        invitationCode: null,
+        statusOfAccount,
+        name: name,
+      },
+    });
+    await this.prisma.userCredential.create({
+      data: {
+        user: {
+          connect: {
+            id: user.id,
+          },
+        },
+        password: passwordHash,
+        otp: {
+          create: {
+            code: undefined,
+            expiresAt: undefined,
+          },
+        },
+      },
+    });
+    return {
+      message: 'Now, you are member of group',
     };
   }
 }

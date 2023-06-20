@@ -15,12 +15,12 @@ model User {
   invitationCode  String?
   invitedBy       String?
   email           String          @unique
-  password        String
   phone           String          @unique
   name            String?
   role            Role
   posts           Post[]
   isEmailVerified Boolean         @default(false)
+  statusOfAccount StatusOfAccount @default(ACTIVATED)
   createdAt       DateTime        @default(now()) @db.Date
   updatedAt       DateTime        @updatedAt @db.Date
   userCredential  UserCredential?
@@ -50,7 +50,7 @@ model Post {
 model Admin {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
-  password  String
+  password  String?
   phone     String   @unique
   name      String?
   createdAt DateTime @default(now()) @db.Date
@@ -85,4 +85,10 @@ enum Tag {
   ENVIRONMENT
   SCIENCE
   BUSINESS
+}
+
+enum StatusOfAccount {
+  INVITED
+  ACTIVATED
+  DEACTIVATED
 }
